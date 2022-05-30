@@ -91,21 +91,21 @@ func extractPriceFromLogs(logs []string) (uint64, error) {
 }
 
 type SignatureOutputCh struct {
-	signatures chan *rpc.TransactionSignature
-	err        chan error
+	Signatures chan *rpc.TransactionSignature
+	Err        chan error
 }
 
 func GetSignatureCh(client *rpc.Client) SignatureOutputCh {
 	var currentLastSignature *rpc.TransactionSignature
 	signatures := SignatureOutputCh{
-		signatures: make(chan *rpc.TransactionSignature),
-		err:        make(chan error),
+		Signatures: make(chan *rpc.TransactionSignature),
+		Err:        make(chan error),
 	}
 	firstSignature, err := client.GetSignaturesForAddressWithOpts(context.TODO(), constance.MAGIC_EDEN_V2_PROGRAM_ID, &rpc.GetSignaturesForAddressOpts{
 		Limit: lo.ToPtr(1),
 	})
 	if err != nil {
-		signatures.err <- err
+		signatures.Err <- err
 		return signatures
 	}
 	currentLastSignature = firstSignature[0]
@@ -116,7 +116,7 @@ func GetSignatureCh(client *rpc.Client) SignatureOutputCh {
 				Commitment: rpc.CommitmentConfirmed,
 			})
 			if err != nil {
-				signatures.err <- err
+				signatures.Err <- err
 				break
 			}
 			if len(tailSignature) > 0 && tailSignature[0].BlockTime.Time().After(currentLastSignature.BlockTime.Time()) {
@@ -128,7 +128,7 @@ func GetSignatureCh(client *rpc.Client) SignatureOutputCh {
 				return tr.Err == nil
 			})
 			for _, signature := range signaturesWithoutErrors {
-				signatures.signatures <- signature
+				signatures.Signatures <- signature
 			}
 		}
 	}()

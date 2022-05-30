@@ -7,18 +7,18 @@ import (
 	"github.com/gagliardetto/solana-go"
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/karneges/me-bot-utils/constance"
-	"github.com/karneges/me-bot-utils/types"
+	globalTypes "github.com/karneges/me-bot-utils/types"
 	"github.com/samber/lo"
 	"strings"
 )
 
-func GetMagicEdenActionTransaction(transaction types.TransactionWithSignatureData) (types.MarketAction, error) {
+func GetMagicEdenActionTransaction(transaction globalTypes.TransactionWithSignatureData) (globalTypes.MarketAction, error) {
 	var transactionDecoded solana.Transaction
 	jsonBytes, err := transaction.Transaction.MarshalJSON()
 
 	err = json.Unmarshal(jsonBytes, &transactionDecoded)
 	if err != nil {
-		return types.MarketAction{}, err
+		return globalTypes.MarketAction{}, err
 	}
 	marketActionInstruction, _ := lo.Find(transactionDecoded.Message.Instructions, func(tr solana.CompiledInstruction) bool {
 		hexData := hex.EncodeToString(tr.Data)
@@ -31,7 +31,7 @@ func GetMagicEdenActionTransaction(transaction types.TransactionWithSignatureDat
 	}
 	owner := getSigner(transactionDecoded)
 	if strings.Contains(hexData, constance.SaleMatcher) {
-		return types.MarketAction{
+		return globalTypes.MarketAction{
 			ActionType: constance.StatusMap[constance.SaleMatcher],
 			Mint:       mint,
 			Owner:      owner,
@@ -42,9 +42,9 @@ func GetMagicEdenActionTransaction(transaction types.TransactionWithSignatureDat
 	if strings.Contains(hexData, constance.ListingMatcher) {
 		price, err := extractPriceFromLogs(transaction.Meta.LogMessages)
 		if err != nil {
-			return types.MarketAction{}, err
+			return globalTypes.MarketAction{}, err
 		}
-		return types.MarketAction{
+		return globalTypes.MarketAction{
 			ActionType:    constance.StatusMap[constance.ListingMatcher],
 			Price:         lo.ToPtr(price),
 			EscrowAccount: lo.ToPtr(transactionDecoded.Message.AccountKeys[marketActionInstruction.Accounts[8]].String()),
@@ -55,14 +55,14 @@ func GetMagicEdenActionTransaction(transaction types.TransactionWithSignatureDat
 	}
 
 	if strings.Contains(hexData, constance.CancelListingMatcher) {
-		return types.MarketAction{
+		return globalTypes.MarketAction{
 			ActionType: constance.StatusMap[constance.CancelListingMatcher],
 			Mint:       mint,
 			Owner:      owner,
 			TimeStamp:  transaction.BlockTime.Time(),
 		}, nil
 	}
-	return types.MarketAction{
+	return globalTypes.MarketAction{
 		ActionType: constance.StatusMap[constance.UnCategorisedMatcher],
 		Owner:      owner,
 		TimeStamp:  transaction.BlockTime.Time(),
@@ -90,14 +90,14 @@ func extractPriceFromLogs(logs []string) (uint64, error) {
 	return priceLog.Price, nil
 }
 
-type signatureOutputCh struct {
+type SignatureOutputCh struct {
 	signatures chan *rpc.TransactionSignature
 	err        chan error
 }
 
-func getSignatureCh(client *rpc.Client) signatureOutputCh {
+func GetSignatureCh(client *rpc.Client) SignatureOutputCh {
 	var currentLastSignature *rpc.TransactionSignature
-	signatures := signatureOutputCh{
+	signatures := SignatureOutputCh{
 		signatures: make(chan *rpc.TransactionSignature),
 		err:        make(chan error),
 	}

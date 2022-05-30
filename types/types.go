@@ -1,4 +1,4 @@
-package types
+package globalTypes
 
 import (
 	"github.com/gagliardetto/solana-go"

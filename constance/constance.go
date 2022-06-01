@@ -1,6 +1,8 @@
 package constance
 
-import "github.com/gagliardetto/solana-go"
+import (
+	"github.com/gagliardetto/solana-go"
+)
 
 var MAGIC_EDEN_V2_PROGRAM_ID = solana.MustPublicKeyFromBase58("M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K")
 

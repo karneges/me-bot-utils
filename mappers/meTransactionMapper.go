@@ -15,15 +15,26 @@ import (
 func GetMagicEdenActionTransaction(transaction globalTypes.TransactionWithSignatureData) (globalTypes.MarketAction, error) {
 	var transactionDecoded solana.Transaction
 	jsonBytes, err := transaction.Transaction.MarshalJSON()
-
+	if err != nil {
+		return globalTypes.MarketAction{}, err
+	}
 	err = json.Unmarshal(jsonBytes, &transactionDecoded)
 	if err != nil {
 		return globalTypes.MarketAction{}, err
 	}
-	marketActionInstruction, _ := lo.Find(transactionDecoded.Message.Instructions, func(tr solana.CompiledInstruction) bool {
+	marketActionInstruction, isFound := lo.Find(transactionDecoded.Message.Instructions, func(tr solana.CompiledInstruction) bool {
 		hexData := hex.EncodeToString(tr.Data)
-		return strings.Contains(hexData, constance.SaleMatcher) || strings.Contains(hexData, constance.ListingMatcher) || strings.Contains(hexData, constance.CancelListingMatcher)
+		_, isFound := lo.Find(tr.ResolveInstructionAccounts(lo.ToPtr(transactionDecoded.Message)), func(t *solana.AccountMeta) bool {
+			return t.PublicKey.Equals(constance.MAGIC_EDEN_V2_PROGRAM_ID)
+		})
+		return isFound && (strings.Contains(hexData, constance.SaleMatcher) || strings.Contains(hexData, constance.ListingMatcher) || strings.Contains(hexData, constance.CancelListingMatcher))
 	})
+	if !isFound {
+		return globalTypes.MarketAction{
+			ActionType: constance.StatusMap[constance.UnCategorisedMatcher],
+			TimeStamp:  transaction.BlockTime.Time(),
+		}, nil
+	}
 	hexData := hex.EncodeToString(marketActionInstruction.Data)
 	var mint solana.PublicKey
 	if len(transaction.Meta.PostTokenBalances) > 0 {
@@ -64,9 +75,9 @@ func GetMagicEdenActionTransaction(transaction globalTypes.TransactionWithSignat
 	}
 	return globalTypes.MarketAction{
 		ActionType: constance.StatusMap[constance.UnCategorisedMatcher],
-		Owner:      owner,
 		TimeStamp:  transaction.BlockTime.Time(),
 	}, nil
+
 }
 
 func extractPriceFromLogs(logs []string) (uint64, error) {

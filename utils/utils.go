@@ -164,39 +164,3 @@ func Pipe6[P1 interface{}, T1 interface{}, T2 interface{}, T3 interface{}, T4 in
 		return f6(result5)
 	}
 }
-
-//type T[T any] []T
-//type Name[E any, Z any, X any] interface {
-//	Map(fn func(p E) Z) Name[E, Z, X]
-//}
-//
-//func Chain[E any, Z any](p []E) interface {
-//	Map(fn func(p E) Z)
-//} {
-//
-//}
-//func Test() {
-//	Chain([]int{1, 2, 3, 4, 5}).Map(func(i int) string {
-//		return "i"
-//	})
-//}
-//func rxPipe2[P1 any, C1 any, C2 any](f1 func(P1) (C1, error), f2 func(C1) (C2, error)) func(chan P1) (chan C2, error) {
-//	return func(p1 chan P1) (chan C2, error) {
-//		chan0 := make(chan P1)
-//		chan1 := make(chan C1)
-//		chan2 := make(chan C2)
-//		go func() {
-//			for inputCh := range chan0 {
-//				result, _ := f1(inputCh)
-//				chan1 <- result
-//			}
-//		}()
-//		go func() {
-//			for inputCh := range chan1 {
-//				result, _ := f2(inputCh)
-//				chan2 <- result
-//			}
-//		}()
-//		return chan2, nil
-//	}
-//}

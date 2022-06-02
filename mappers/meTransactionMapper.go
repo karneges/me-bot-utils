@@ -56,12 +56,13 @@ func GetMagicEdenActionTransaction(transaction globalTypes.TransactionWithSignat
 			return globalTypes.MarketAction{}, err
 		}
 		return globalTypes.MarketAction{
-			ActionType:    constance.StatusMap[constance.ListingMatcher],
-			Price:         lo.ToPtr(price),
-			EscrowAccount: lo.ToPtr(transactionDecoded.Message.AccountKeys[marketActionInstruction.Accounts[8]].String()),
-			Mint:          mint,
-			Owner:         owner,
-			TimeStamp:     transaction.BlockTime.Time(),
+			ActionType:     constance.StatusMap[constance.ListingMatcher],
+			Price:          lo.ToPtr(price),
+			EscrowAccount:  lo.ToPtr(transactionDecoded.Message.AccountKeys[marketActionInstruction.Accounts[8]].String()),
+			ListingAccount: lo.ToPtr(transactionDecoded.Message.AccountKeys[marketActionInstruction.Accounts[2]]),
+			Mint:           mint,
+			Owner:          owner,
+			TimeStamp:      transaction.BlockTime.Time(),
 		}, nil
 	}
 

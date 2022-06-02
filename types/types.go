@@ -56,12 +56,13 @@ type NftEntityWithState struct {
 	EscrowAccount *string
 }
 type MarketAction struct {
-	ActionType    string
-	EscrowAccount *string
-	Price         *uint64
-	Mint          solana.PublicKey
-	Owner         solana.PublicKey
-	TimeStamp     time.Time
+	ActionType     string
+	EscrowAccount  *string
+	ListingAccount *solana.PublicKey
+	Price          *uint64
+	Mint           solana.PublicKey
+	Owner          solana.PublicKey
+	TimeStamp      time.Time
 }
 type MarketActionWithSignature struct {
 	MarketAction

@@ -50,10 +50,11 @@ type NftEntity struct {
 
 type NftEntityWithState struct {
 	NftEntity
-	Owner         solana.PublicKey
-	State         string
-	Price         *uint64
-	EscrowAccount *string
+	Owner          solana.PublicKey
+	ListingAccount *solana.PublicKey
+	State          string
+	Price          *uint64
+	EscrowAccount  *string
 }
 type MarketAction struct {
 	ActionType     string

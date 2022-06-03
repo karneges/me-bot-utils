@@ -23,11 +23,12 @@ func GetMagicEdenActionTransaction(transaction globalTypes.TransactionWithSignat
 		return globalTypes.MarketAction{}, err
 	}
 	marketActionInstruction, isFound := lo.Find(transactionDecoded.Message.Instructions, func(tr solana.CompiledInstruction) bool {
-		hexData := hex.EncodeToString(tr.Data)
-		_, isFound := lo.Find(tr.ResolveInstructionAccounts(lo.ToPtr(transactionDecoded.Message)), func(t *solana.AccountMeta) bool {
-			return t.PublicKey.Equals(constance.MAGIC_EDEN_V2_PROGRAM_ID)
-		})
-		return isFound && (strings.Contains(hexData, constance.SaleMatcher) || strings.Contains(hexData, constance.ListingMatcher) || strings.Contains(hexData, constance.CancelListingMatcher))
+		if transactionDecoded.Message.AccountKeys[tr.ProgramIDIndex].Equals(constance.MAGIC_EDEN_V2_PROGRAM_ID) {
+			hexData := hex.EncodeToString(tr.Data)
+			return strings.Contains(hexData, constance.SaleMatcher) || strings.Contains(hexData, constance.ListingMatcher) || strings.Contains(hexData, constance.CancelListingMatcher)
+
+		}
+		return false
 	})
 	if !isFound {
 		return globalTypes.MarketAction{

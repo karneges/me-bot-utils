@@ -9,10 +9,12 @@ import (
 	"github.com/karneges/me-bot-utils/constance"
 	globalTypes "github.com/karneges/me-bot-utils/types"
 	"github.com/samber/lo"
+	"log"
 	"strings"
 )
 
-func GetMagicEdenActionTransaction(transaction globalTypes.TransactionWithSignatureData) (globalTypes.MarketAction, error) {
+func GetMagicEdenActionTransaction(transaction *rpc.GetTransactionResult) (globalTypes.MarketAction, error) {
+
 	var transactionDecoded solana.Transaction
 	jsonBytes, err := transaction.Transaction.MarshalJSON()
 	if err != nil {
@@ -104,35 +106,45 @@ func extractPriceFromLogs(logs []string) (uint64, error) {
 }
 
 type SignatureOutputCh struct {
-	Signatures chan *rpc.TransactionSignature
+	Signatures chan []*rpc.TransactionSignature
 	Err        chan error
 }
 
 func GetSignatureCh(client *rpc.Client) SignatureOutputCh {
 	var currentLastSignature *rpc.TransactionSignature
 	signatures := SignatureOutputCh{
-		Signatures: make(chan *rpc.TransactionSignature),
+		Signatures: make(chan []*rpc.TransactionSignature),
 		Err:        make(chan error),
 	}
 	firstSignature, err := client.GetSignaturesForAddressWithOpts(context.TODO(), constance.MAGIC_EDEN_V2_PROGRAM_ID, &rpc.GetSignaturesForAddressOpts{
-		Limit: lo.ToPtr(1),
+		Limit:      lo.ToPtr(1),
+		Commitment: rpc.CommitmentProcessed,
 	})
 	if err != nil {
 		signatures.Err <- err
 		return signatures
 	}
 	currentLastSignature = firstSignature[0]
+	println(currentLastSignature.Signature.String())
 	go func() {
 		for {
 			tailSignature, err := client.GetSignaturesForAddressWithOpts(context.TODO(), constance.MAGIC_EDEN_V2_PROGRAM_ID, &rpc.GetSignaturesForAddressOpts{
 				Until:      currentLastSignature.Signature,
-				Commitment: rpc.CommitmentConfirmed,
+				Commitment: rpc.CommitmentProcessed,
+				Limit:      lo.ToPtr(50),
 			})
+
 			if err != nil {
-				signatures.Err <- err
-				break
+				log.Printf("get confirmed Signatures error: %v", err.Error())
+				//signatures.Err <- err
+				//break
 			}
-			if len(tailSignature) > 0 && tailSignature[0].BlockTime.Time().After(currentLastSignature.BlockTime.Time()) {
+			if len(tailSignature) > 0 {
+				//log.Printf(
+				//	"Current signature %v vs next signature %v",
+				//	currentLastSignature.Signature.String(),
+				//	tailSignature[0].Signature.String(),
+				//	)
 				currentLastSignature = tailSignature[0]
 			} else {
 				continue
@@ -140,9 +152,7 @@ func GetSignatureCh(client *rpc.Client) SignatureOutputCh {
 			signaturesWithoutErrors := lo.Filter(tailSignature, func(tr *rpc.TransactionSignature, i int) bool {
 				return tr.Err == nil
 			})
-			for _, signature := range signaturesWithoutErrors {
-				signatures.Signatures <- signature
-			}
+			signatures.Signatures <- signaturesWithoutErrors
 		}
 	}()
 	return signatures
